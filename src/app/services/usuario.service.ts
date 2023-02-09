@@ -6,6 +6,7 @@ import { RegisterForm } from '../interfaces/register-form.interface';
 import { LoginForm } from '../interfaces/login-form.interface';
 import { Router } from '@angular/router';
 import { Usuario } from '../models/usuario.model';
+import { GetUsuario } from '../interfaces/get-usuarios.interface';
 
 declare const google: any;
 const base_url = environment.base_url;
@@ -31,6 +32,14 @@ export class UsuarioService {
 
   get uid(){
     return this.usuario.uid || '';
+  }
+
+  get headers(){
+    return {
+      headers: {
+        'x-token': this.token
+      }
+    }
   }
 
   logout(){
@@ -77,16 +86,14 @@ export class UsuarioService {
                 );
   }
 
-  actualizarUsuario( data: {email: string, nombre: string, role: string} ){
+  actualizarPerfil( data: {email: string, nombre: string, role: string} ){
+
     data = {
       ...data,
       role: this.usuario.role!
     }
-    return this.http.put(`${base_url}/usuarios/${this.uid}`, data, {
-      headers: {
-        'x-token': this.token
-      }
-    });
+
+    return this.http.put(`${base_url}/usuarios/${this.uid}`, data, this.headers);
   }
 
   login( formData: LoginForm ) {
@@ -104,5 +111,37 @@ export class UsuarioService {
         localStorage.setItem('token', res.token);
       })
     )
+  }
+
+  getUsuarios( desde: number = 0 ){
+
+    const url = `${base_url}/usuarios?desde=${desde}`;
+    // Se tipa la respuesta, para que al suscribirse se pueda tener el tipado
+    return this.http.get<GetUsuario>(url, this.headers)
+            .pipe(
+              map( res => {
+                // Se mapea la respuesta
+                // Por cada usuario se crea una instancia de la clase Usuario
+                // Como es una instancia, podemos usar los métodos que nos da la clase
+                // En este caso podríamos acceder al método para obtener el avatar
+                const usuarios = res.usuarios.map( user => 
+                  new Usuario(user.nombre, user.email, '', user.google, user.img, user.role, user.uid) 
+                )
+                // Retornamos los datos mapeados
+                return {
+                  total: res.total,
+                  usuarios
+                };
+              })
+            )
+  }
+
+  eliminarUsuario(usuario: Usuario){
+    const url = `${base_url}/usuarios/${usuario.uid}`;
+    return this.http.delete(url, this.headers)
+  }
+
+  guardarUsuario( usuario: Usuario ){
+    return this.http.put(`${base_url}/usuarios/${usuario.uid}`, usuario, this.headers);
   }
 }
