@@ -38,6 +38,8 @@ export class ModalImagenService {
   }
 
   cerrarModal(){
+    this.id = '',
+    this.img = '';
     this._ocultarModal = true;
   }
 
