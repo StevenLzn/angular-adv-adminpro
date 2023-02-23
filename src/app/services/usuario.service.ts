@@ -42,9 +42,14 @@ export class UsuarioService {
     }
   }
 
+  get role(): 'ADMIN_ROLE' | 'USER_ROLE' {
+    return this.usuario.role!;
+  }
+
   logout(){
     localStorage.removeItem('token');
-    
+    localStorage.removeItem('menu');
+
     if( this.usuario.google ){
       google.accounts.id.revoke('correo', () => {
         this.ngZone.run(() =>{
@@ -70,7 +75,7 @@ export class UsuarioService {
         const {email, google, nombre, role, img = '', uid } = res.usuario;
         // Si se quiere tener acceso a los métodos de la clase, entonces se instancia el objeto
         this.usuario = new Usuario(nombre, email, '', google, img, role, uid ); // Esta es una nueva instancia de la clase usuario
-        localStorage.setItem('token', res.token);
+        this.guardarLocalStorage(res.token, res.menu);
         return true;
       }),
       catchError( err => of(false)) // El of() retorna un observable con el valor especificado en el parámetro
@@ -81,7 +86,7 @@ export class UsuarioService {
     return this.http.post(`${base_url}/usuarios`, formData)
                 .pipe(
                   tap( (res: any) => {
-                    localStorage.setItem('token', res.token);
+                    this.guardarLocalStorage(res.token, res.menu);
                   })
                 );
   }
@@ -100,7 +105,7 @@ export class UsuarioService {
     return this.http.post(`${base_url}/login`, formData)
                 .pipe(
                   tap( (res: any) => {
-                    localStorage.setItem('token', res.token);
+                    this.guardarLocalStorage(res.token, res.menu);
                   })
                 );
   }
@@ -108,9 +113,14 @@ export class UsuarioService {
   loginGoogle( token: string ){
     return this.http.post(`${ base_url }/login/google`, { token }).pipe(
       tap( (res: any) => {
-        localStorage.setItem('token', res.token);
+        this.guardarLocalStorage(res.token, res.menu);
       })
     )
+  }
+
+  guardarLocalStorage(token: string, menu: any){
+    localStorage.setItem('token', token);
+    localStorage.setItem('menu', JSON.stringify(menu));
   }
 
   getUsuarios( desde: number = 0 ){
